@@ -9,10 +9,21 @@
     "web": "expo start --web"
   },
   "dependencies": {
+    "@hookform/resolvers": "^2.9.10",
     "expo": "~47.0.12",
+    "expo-app-loading": "~2.1.1",
+    "expo-font": "^11.0.1",
+    "expo-splash-screen": "~0.17.5",
     "expo-status-bar": "~1.4.2",
-    "react": "18.1.0",
-    "react-native": "0.70.5"
+    "react": "^18.1.0",
+    "react-hook-form": "^7.42.1",
+    "react-icons": "^4.7.1",
+    "react-native": "0.70.5",
+    "react-native-image-picker": "^5.0.1",
+    "react-native-vector-icons": "^9.2.0",
+    "styled-components": "^5.3.6",
+    "yup": "^0.32.11",
+    "expo-image-picker": "~14.0.2"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9"
