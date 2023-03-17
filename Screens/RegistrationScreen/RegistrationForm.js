@@ -1,17 +1,13 @@
 import {
   View,
-  Image,
   KeyboardAvoidingView,
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  TouchableOpacity,
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import {
   Form,
-  ImgButton,
-  ImgWrap,
   Input,
   Title,
   Wrap,
@@ -19,13 +15,13 @@ import {
 import { SubmitButton } from "../commonComponent/SubmitButton/SubmitButton";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useEffect, useState } from "react";
-import AntDesign from "react-native-vector-icons/AntDesign";
-import * as ImagePicker from "expo-image-picker";
 import { ShowButton } from "../commonComponent/ShowButton/ShowButton";
 import { createFormData } from "../../helpers/createFormData";
 import { registerSchema } from "../../helpers/validationShemas";
+import { RedirectButton } from "../commonComponent/RedirectButton/RedirectButton";
+import { UserImgChoose } from "../commonComponent/UserImgChoose/UserImgChoose";
 
-export default RegistrationForm = () => {
+export default RegistrationForm = ({ navigation }) => {
   const [avatar, setAvatar] = useState(null);
   const [securePswrd, setSecurePswrd] = useState(true);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
@@ -38,23 +34,6 @@ export default RegistrationForm = () => {
       hideSubscription.remove();
     };
   }, []);
-
-  const handleChoosePhoto = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        setAvatar(result.assets[0]);
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
 
   const {
     control,
@@ -88,21 +67,7 @@ export default RegistrationForm = () => {
           <Form>
             <Wrap>
               <Title>Реєстрація</Title>
-              <ImgWrap>
-                {avatar && (
-                  <TouchableOpacity onPress={handleChoosePhoto}>
-                    <Image
-                      source={{ uri: avatar.uri }}
-                      style={{ width: 120, height: 120, borderRadius: 16 }}
-                    />
-                  </TouchableOpacity>
-                )}
-                {!avatar && (
-                  <ImgButton onPress={handleChoosePhoto}>
-                    <AntDesign name="pluscircleo" color="#ff6c00" size={25} />
-                  </ImgButton>
-                )}
-              </ImgWrap>
+              <UserImgChoose avatar={avatar} setAvatar={setAvatar} />
               <Controller
                 control={control}
                 render={({ field: { onChange, onBlur, value } }) => (
@@ -160,6 +125,9 @@ export default RegistrationForm = () => {
                 <SubmitButton onPress={handleSubmit(onSubmit)}>
                   Зареєструватись
                 </SubmitButton>
+                <RedirectButton onPress={() => navigation.navigate("Login")}>
+                  Уже є акаунт? Вхід
+                </RedirectButton>
               </View>
             )}
           </Form>

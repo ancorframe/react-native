@@ -4,6 +4,8 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  TouchableOpacity,
+  Button,
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { SubmitButton } from "../commonComponent/SubmitButton/SubmitButton";
@@ -13,8 +15,9 @@ import { ShowButton } from "../commonComponent/ShowButton/ShowButton";
 import { createFormData } from "../../helpers/createFormData";
 import { loginSchema } from "../../helpers/validationShemas";
 import { Form, Input, Title, Wrap } from "./LoginForm.styled";
+import { RedirectButton } from "../commonComponent/RedirectButton/RedirectButton";
 
-export default RegistrationForm = () => {
+export default RegistrationForm = ({ navigation }) => {
   const [securePswrd, setSecurePswrd] = useState(true);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
 
@@ -97,10 +100,15 @@ export default RegistrationForm = () => {
               </View>
             </Wrap>
             {!isShowKeyboard && (
-              <View style={{ height: 230, paddingHorizontal: 16 }}>
+              <View style={{ height: 230, paddingHorizontal: 16}}>
                 <SubmitButton onPress={handleSubmit(onSubmit)}>
                   Вхід
                 </SubmitButton>
+                <RedirectButton
+                  onPress={() => navigation.navigate("Registration")}
+                >
+                  Немає акаунта? Зареєструватися
+                </RedirectButton>
               </View>
             )}
           </Form>

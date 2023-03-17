@@ -1,17 +1,17 @@
 import { View } from "react-native";
+import { BgImage } from "../commonComponent/BgImage/BgImage";
 import RegistrationForm from "./RegistrationForm";
-import { BgImg } from "./RegistrationForm.styled";
 
-export default RegistrationScreen = () => {
+export default RegistrationScreen = ({ navigation }) => {
   return (
     <View
       style={{
         flex: 1,
       }}
     >
-      <BgImg source={require("../../assets/img/PhotoBG.png")}>
-        <RegistrationForm />
-      </BgImg>
+      <BgImage>
+        <RegistrationForm navigation={navigation} />
+      </BgImage>
     </View>
   );
 };

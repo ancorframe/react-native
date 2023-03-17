@@ -1,12 +1,5 @@
-import { TextInput, TouchableOpacity, View, Text, ImageBackground } from "react-native";
+import { TextInput, View, Text } from "react-native";
 import styled from "styled-components/native";
-
-export const BgImg = styled(ImageBackground)`
-flex: 1;
-object-fit:cover;
-flex-direction: column;
-justify-content: flex-end;
-`;
 
 export const Form = styled(View)`
   background-color: #fff;
@@ -57,20 +50,4 @@ export const Input = styled(TextInput)`
 export const ErrorInput = styled(Text)`
   position: absolute;
   color: red;
-`;
-
-export const ImgWrap = styled(View)`
-  position: absolute;
-  top: -60px;
-  align-self: center;
-  width: 120px;
-  height: 120px;
-  border-radius: 16px;
-  background-color: #f6f6f6;
-`;
-
-export const ImgButton = styled(TouchableOpacity)`
-  position: absolute;
-  bottom: 14px;
-  right: -12.5px;
 `;
