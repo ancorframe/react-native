@@ -3,6 +3,7 @@ import { CommentsScreen } from "../CommentsScreen/CommentsScreen";
 import { Posts } from "./Posts";
 import { HeaderButtons, Item } from "react-navigation-header-buttons";
 import { LogoutButton } from "../commonComponent/LogoutButton/LogoutButton";
+import { MapScreen } from "../MapScreen/MapScreen";
 
 const NestedScreen = createStackNavigator();
 
@@ -33,6 +34,11 @@ export const PostsScreen = () => {
           name="Comments"
           component={CommentsScreen}
           options={{ title: "Коментарі" }}
+        />
+        <NestedScreen.Screen
+          name="Map"
+          component={MapScreen}
+          options={{ title: "map" }}
         />
       </NestedScreen.Navigator>
     </>

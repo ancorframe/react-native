@@ -1,159 +1,263 @@
+import { useEffect, useState } from "react";
+import { Camera } from "expo-camera";
+import * as Location from "expo-location";
+import * as MediaLibrary from "expo-media-library";
+import * as ImagePicker from "expo-image-picker";
 import {
+  Dimensions,
+  Image,
   Keyboard,
-  KeyboardAvoidingView,
+  StyleSheet,
+  Text,
+  TextInput,
   TouchableOpacity,
   TouchableWithoutFeedback,
   View,
 } from "react-native";
-import { PostImage } from "../commonComponent/PostImage/PostImage";
-import {
-  ButtonImg,
-  CameraIcn,
-  ImgInfo,
-  Input,
-  WrapButton,
-} from "./CreatePostScreen.styled";
-import LocationIcon from "../../img/map-pin.svg";
 
-import { SubmitButton } from "../commonComponent/SubmitButton/SubmitButton";
-import { useEffect, useState } from "react";
-import { Controller, useForm } from "react-hook-form";
-import { yupResolver } from "@hookform/resolvers/yup";
-import * as ImagePicker from "expo-image-picker";
-import { createFormData } from "../../helpers/createFormData";
-import { PostSchema } from "../../helpers/validationShemas";
-
+//icons
+import { FontAwesome5, EvilIcons, MaterialIcons } from "@expo/vector-icons";
+const initialState = { photo: null, location: null, place: "", name: "" };
+const fonts = ["Roboto-Regular"];
 export const CreatePost = ({ navigation }) => {
-  const [avatar, setAvatar] = useState(null);
-  const [isShowKeyboard, setIsShowKeyboard] = useState(false);
+  const [focus, setFocus] = useState(false);
+  const [hasPermission, setHasPermission] = useState(null);
+  const [camera, setCamera] = useState(null);
+  const [state, setState] = useState({});
+  const [type, setType] = useState(Camera.Constants.Type.back);
+  const [isActiveBtn, setIsActiveBtn] = useState(false);
+  const [dimensions, setDimensions] = useState(
+    () => Dimensions.get("window").width - 16 * 2
+  );
 
-  useEffect(() => {
-    const hideSubscription = Keyboard.addListener("keyboardWillHide", () => {
-      setIsShowKeyboard(false);
+  const takePhoto = async () => {
+    if (photo) {
+      setState((prev) => ({ ...prev, photo: null }));
+      return;
+    }
+    const snap = await camera.takePictureAsync();
+    const { coords } = await Location.getCurrentPositionAsync();
+    setState((prev) => ({
+      ...prev,
+      location: { latitude: coords.latitude, longitude: coords.longitude },
+      photo: snap.uri,
+    }));
+  };
+
+  const pickImage = async () => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
     });
-    return () => {
-      hideSubscription.remove();
-    };
-  }, []);
-
-  const handleChoosePhoto = async () => {
-    try {
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 1,
-      });
-
-      if (!result.canceled) {
-        setAvatar(result.assets[0]);
-      }
-    } catch (error) {
-      console.log(error);
+    if (!result.canceled) {
+      setState((prev) => ({ ...prev, photo: result.assets[0].uri }));
     }
   };
-  const {
-    control,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({
-    defaultValues: {
-      name: "",
-      location: "",
-    },
-    resolver: yupResolver(PostSchema),
-  });
 
-  const keyboardHide = () => {
+  const changeCameraType = () => {
+    setType(
+      type === Camera.Constants.Type.back
+        ? Camera.Constants.Type.front
+        : Camera.Constants.Type.back
+    );
+  };
+  const onPublicPost = () => {
+    navigation.navigate("MainPost", state);
+    setState(initialState);
+  };
+
+  useEffect(() => {
+    const { photo, name } = state;
+    setIsActiveBtn(photo && name);
+    (async () => {
+      const { status } = await Camera.requestCameraPermissionsAsync();
+      await MediaLibrary.requestPermissionsAsync();
+      let foreground = await Location.requestForegroundPermissionsAsync({});
+      if (foreground.status !== "granted") {
+        console.log("no access to location");
+      }
+      setHasPermission(status === "granted");
+    })();
+  }, [state]);
+
+
+  const onTouchOutOfInput = () => {
     Keyboard.dismiss();
-    setIsShowKeyboard(false);
+    setFocus(false);
   };
 
-  const onSubmit = (data) => {
-    const body = createFormData(avatar, data);
-    console.log(body);
-  };
-
+  if (hasPermission === null) {
+    return <View />;
+  }
+  if (hasPermission === false) {
+    return <Text>No access to camera</Text>;
+  }
+  const { photo, name, place } = state;
   return (
-    <>
-      <View style={{ flex: 1, backgroundColor: "#fff" }}>
-        <View
-          style={{
-            flex: 1,
-            paddingHorizontal: 16,
-            marginTop: 50,
-          }}
-        >
-          <TouchableWithoutFeedback onPress={keyboardHide}>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === "ios" ? "padding" : "height"}
+    <TouchableWithoutFeedback onPress={onTouchOutOfInput}>
+      <View style={styles.container}>
+        <View style={{ marginBottom: 32, position: "relative" }}>
+          <Camera
+            type={type}
+            style={{ ...styles.loadImgBox, width: dimensions }}
+            ref={setCamera}
+          >
+            {photo && (
+              <Image source={{ uri: photo }} style={styles.afterSnapPhoto} />
+            )}
+          </Camera>
+          <TouchableOpacity activeOpacity={0.8} onPress={pickImage}>
+            <Text style={{ ...styles.loadImgText, fontFamily: fonts[0] }}>
+              Загрузите фото
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.loadImgButton}
+            onPress={takePhoto}
+            disabled={!hasPermission}
+          >
+            <FontAwesome5 name="camera" size={24} color="black" />
+          </TouchableOpacity>
+          {!photo && (
+            <TouchableOpacity
+              style={styles.changeCameraButton}
+              onPress={changeCameraType}
+              disabled={!hasPermission}
             >
-              <View
-                style={{
-                  position: "relative",
-                  marginBottom: 8,
-                }}
-              >
-                <PostImage source={avatar && { uri: avatar.uri }} />
-                <WrapButton>
-                  <TouchableOpacity onPress={handleChoosePhoto}>
-                    <ButtonImg select={avatar}>
-                      <CameraIcn select={avatar} />
-                    </ButtonImg>
-                  </TouchableOpacity>
-                </WrapButton>
-              </View>
-              <ImgInfo>Завантажте фото</ImgInfo>
-              <Controller
-                control={control}
-                render={({ field: { onChange, onBlur, value } }) => (
-                  <Input
-                    placeholder="Назва..."
-                    error={errors.login}
-                    onBlur={onBlur}
-                    onChangeText={onChange}
-                    value={value}
-                    onFocus={() => setIsShowKeyboard(true)}
-                  />
-                )}
-                name="name"
-              />
-              <View
-                style={{
-                  position: "relative",
-                  justifyContent: "center",
-                  marginBottom: 32,
-                }}
-              >
-                <LocationIcon
-                  style={{
-                    position: "absolute",
-                  }}
-                />
-                <Controller
-                  control={control}
-                  render={({ field: { onChange, onBlur, value } }) => (
-                    <Input
-                      last
-                      placeholder="Місцевість..."
-                      error={errors.login}
-                      onBlur={onBlur}
-                      onChangeText={onChange}
-                      value={value}
-                      onFocus={() => setIsShowKeyboard(true)}
-                    />
-                  )}
-                  name="location"
-                />
-              </View>
-              <SubmitButton onPress={handleSubmit(onSubmit)}>
-                Опублікувати
-              </SubmitButton>
-            </KeyboardAvoidingView>
-          </TouchableWithoutFeedback>
+              <MaterialIcons name="flip-camera-ios" size={24} color="black" />
+            </TouchableOpacity>
+          )}
         </View>
+        <View>
+          <TextInput
+            placeholder="Название..."
+            style={{ ...styles.input, fontFamily: fonts[0] }}
+            onFocus={() => setFocus(true)}
+            onChangeText={(name) => setState(prev => ({...prev, name}))}
+            value={name}
+          />
+        </View>
+        <View style={styles.locationInputContainer}>
+          <EvilIcons
+            name="location"
+            size={24}
+            color="black"
+            style={{ marginRight: 5, paddingTop: 8 }}
+          />
+          <TextInput
+            placeholder="Местность..."
+            style={{ ...styles.input, fontFamily: fonts[0] }}
+            onFocus={() => setFocus(true)}
+            onChangeText={(place) => setState(prev => ({...prev, place}))}
+            value={place}
+          />
+        </View>
+        {!focus && (
+          <TouchableOpacity
+            activeOpacity={0.7}
+            disabled={!isActiveBtn}
+            style={{
+              ...styles.btn,
+              backgroundColor: isActiveBtn ? "#FF6C00" : "#F6F6F6",
+            }}
+            onPress={onPublicPost}
+          >
+            <Text
+              style={{
+                ...styles.btnText,
+                fontFamily: fonts[0],
+                color: isActiveBtn ? "#FFFFFF" : "#BDBDBD",
+              }}
+            >
+              Опубликовать
+            </Text>
+          </TouchableOpacity>
+        )}
       </View>
-    </>
+    </TouchableWithoutFeedback>
   );
 };
 
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: "#fff",
+    paddingHorizontal: 16,
+    paddingVertical: 32,
+  },
+  loadImgBox: {
+    position: "relative",
+    height: 240,
+    backgroundColor: "#F6F6F6",
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
+    borderRadius: 8,
+  },
+  loadImgText: {
+    paddingTop: 8,
+    color: "#BDBDBD",
+    fontSize: 16,
+    lineHeight: 19,
+    fontWeight: 400,
+  },
+  loadImgButton: {
+    position: "absolute",
+    top: "50%",
+    left: "50%",
+    transform: [{ translateX: -30 }, { translateY: -30 }],
+    backgroundColor: "#FFFFFF",
+    width: 60,
+    height: 60,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "50%",
+    zIndex: 100,
+  },
+  changeCameraButton: {
+    position: "absolute",
+    top: "70%",
+    left: "85%",
+    backgroundColor: "#FFFFFF",
+    width: 40,
+    height: 40,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: "50%",
+    zIndex: 100,
+  },
+  input: {
+    fontSize: 16,
+    lineHeight: 19,
+    paddingVertical: 16,
+    borderBottomWidth: 1,
+    color: "#212121",
+    borderBottomColor: "#E8E8E8",
+  },
+  locationInputContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderBottomWidth: 1,
+    color: "#212121",
+    borderBottomColor: "#E8E8E8",
+    marginTop: 16,
+  },
+  btn: {
+    alignItems: "center",
+    marginTop: 32,
+    paddingVertical: 16,
+    borderRadius: 100,
+  },
+  btnText: {
+    fontSize: 16,
+    lineHeight: 19,
+  },
+  afterSnapPhoto: {
+    position: "absolute",
+    flex: 1,
+    width: "100%",
+    height: 240,
+    zIndex: 20,
+  },
+});
