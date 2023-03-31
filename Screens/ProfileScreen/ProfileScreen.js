@@ -9,19 +9,49 @@ import { BgImage } from "../commonComponent/BgImage/BgImage";
 import { UserImgChoose } from "../commonComponent/UserImgChoose/UserImgChoose";
 import Feather from "react-native-vector-icons/Feather";
 import { Post } from "../commonComponent/Post/Post";
+import { useSelector } from "react-redux";
+import { user } from "../../redux/selectors/authSelector";
+import { useEffect } from "react";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { db } from "../../firebase/config";
+import {  useDispatch } from "react-redux";
+import { logout } from "../../redux/auth/operations";
 
-const IMAGENAME = require("../../assets/adaptive-icon.png");
+export const ProfileScreen = ({navigation}) => {
+  const { avatar, userId, nickname } = useSelector(user);
+  const [avatars, setAvatar] = useState(avatar);
+  const [posts, setPosts] = useState([]);
 
-const post = [
-  { image: IMAGENAME, name: "lis", comments: 50, location: "lviv", likes: 30 },
-  { image: IMAGENAME, name: "lis", comments: 50, location: "lviv", likes: 30 },
-  { image: IMAGENAME, name: "lis", comments: 50, location: "lviv", likes: 30 },
-  { image: IMAGENAME, name: "lis", comments: 0, location: "lviv", likes: 0 },
-];
+    const dispatch = useDispatch();
+  useEffect(() => {
+    (async () => {
+      try {
+        // const querySnapshot = await getDocs(collection(db, "posts"));
+        // querySnapshot.forEach((doc) => {
+        //   // console.log(doc.id, " => ", doc.data());
+        //   setPosts((posts) => [...posts, { id: doc.id, ...doc.data() }]);
+        // });
+        const q = query(
+          collection(db, "posts"),
+          where("userId", "==", userId),
+          // orderBy("createdAt", "desc")
+        );
 
-export const ProfileScreen = () => {
-  const [avatar, setAvatar] = useState(null);
+        const querySnapshot = await getDocs(q);
+        querySnapshot.forEach((doc) => {
+          // doc.data() is never undefined for query doc snapshots
+          // console.log(doc.id, " => ", doc.data());
+          setPosts((posts) => [...posts, { id: doc.id, ...doc.data() }]);
+        });
 
+      } catch (error) {
+        console.error("post", error);
+      }
+    })();
+    return () => {
+      setPosts([]);
+    };
+  }, []);
   return (
     <>
       <BgImage>
@@ -35,8 +65,8 @@ export const ProfileScreen = () => {
             paddingHorizontal: 16,
           }}
         >
-          <UserImgChoose avatar={avatar} setAvatar={setAvatar} />
-          <TouchableOpacity
+          <UserImgChoose avatar={avatars} setAvatar={setAvatar} />
+          <TouchableOpacity onPress={()=>  dispatch(logout())}
             style={{ alignSelf: "flex-end", marginTop: 22, marginBottom: 46 }}
           >
             <Feather name="log-out" color="#BDBDBD" size={24} />
@@ -48,10 +78,10 @@ export const ProfileScreen = () => {
               marginBottom: 33,
             }}
           >
-            Natali Romanova
+            {nickname}
           </Text>
           <FlatList
-            data={post}
+            data={posts}
             renderItem={(post) => <Post widthLikes {...post.item} />}
           />
         </View>

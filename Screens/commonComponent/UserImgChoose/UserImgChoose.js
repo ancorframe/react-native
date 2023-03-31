@@ -1,7 +1,7 @@
 import { Img, ImgButton, ImgSkeleton, ImgWrap } from "./UserImgChoose.styled";
 import AntDesign from "react-native-vector-icons/AntDesign";
 import * as ImagePicker from "expo-image-picker";
-import { TouchableOpacity, View } from "react-native";
+import { TouchableOpacity } from "react-native";
 
 export const UserImgChoose = ({ avatar, setAvatar }) => {
   const handleChoosePhoto = async () => {
@@ -14,7 +14,7 @@ export const UserImgChoose = ({ avatar, setAvatar }) => {
       });
 
       if (!result.canceled) {
-        setAvatar(result.assets[0]);
+        setAvatar(result.assets[0].uri);
       }
     } catch (error) {
       console.log(error);
@@ -25,7 +25,7 @@ export const UserImgChoose = ({ avatar, setAvatar }) => {
     <>
       <ImgWrap>
         <TouchableOpacity onPress={handleChoosePhoto}>
-          {avatar ? <Img source={{ uri: avatar.uri }} /> : <ImgSkeleton />}
+          {avatar ? <Img source={{ uri: avatar }} /> : <ImgSkeleton />}
           {!avatar && (
             <ImgButton onPress={handleChoosePhoto}>
               <AntDesign name="pluscircleo" color="#ff6c00" size={25} />

@@ -22,7 +22,7 @@ export const Post = ({ widthLikes, ...props }) => {
           style={{
             marginBottom: 8,
           }}
-          source={image}
+          source={{ uri: image }}
         />
         <PostName>{name}</PostName>
         <View
@@ -38,14 +38,16 @@ export const Post = ({ widthLikes, ...props }) => {
             }}
           >
             <TouchableOpacity
-              onPress={() => navigation.navigate("Comments")}
+              onPress={() =>
+                navigation.navigate("Comments", { ...props })
+              }
               style={{
                 flexDirection: "row",
                 alignItems: "center",
               }}
             >
               <CommentIcn comments={comments} />
-              <PostComments>{comments}</PostComments>
+              <PostComments>{comments.length}</PostComments>
             </TouchableOpacity>
             {widthLikes && (
               <View
@@ -61,11 +63,11 @@ export const Post = ({ widthLikes, ...props }) => {
             )}
           </View>
           <TouchableOpacity
-            onPress={() => navigation.navigate("Map")}
+            onPress={() => navigation.navigate("Map", { location: location })}
             style={{ flexDirection: "row", alignItems: "center" }}
           >
             <LocationIcon style={{ marginRight: 8 }} />
-            <PostLocation>{location}</PostLocation>
+            <PostLocation>{location.locationName}</PostLocation>
           </TouchableOpacity>
         </View>
       </View>

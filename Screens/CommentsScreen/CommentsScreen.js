@@ -22,44 +22,30 @@ import {
 } from "./CommentsScreen.styled";
 import Arrow from "../../img/Vector.svg";
 import { Comment } from "./Comment";
+import { getFirestore, updateDoc } from "firebase/firestore";
+import { useSelector } from "react-redux";
+import { user } from "../../redux/selectors/authSelector";
+import {
+  doc,
+  setDoc,
+  getDoc,
+  onSnapshot,
+  collection,
+  query,
+} from "firebase/firestore";
+import { db } from "../../firebase/config";
 
-const IMAGENAME = require("../../assets/adaptive-icon.png");
-
-const comments = [
-  {
-    type: "comment",
-    avatar: IMAGENAME,
-    comment: `Really love your most recent photo. I’ve been trying to capture the same thing for a few months and would love some tips!`,
-    time: "09 июня, 2020 | 08:40",
-  },
-  {
-    type: "answer",
-    avatar: IMAGENAME,
-    comment: `Really love your most recent photo. I’ve been trying to capture the same thing for a few months and would love some tips!`,
-    time: "09 июня, 2020 | 08:40",
-  },
-  {
-    type: "comment",
-    avatar: IMAGENAME,
-    comment: `Really love your most recent photo. I’ve been trying to capture the same thing for a few months and would love some tips!`,
-    time: "09 июня, 2020 | 08:40",
-  },
-  {
-    type: "answer",
-    avatar: IMAGENAME,
-    comment: `Really love your most recent photo. I’ve been trying to capture the same thing for a few months and would love some tips!`,
-    time: "09 июня, 2020 | 08:40",
-  },
-  {
-    type: "comment",
-    avatar: IMAGENAME,
-    comment: `Really love your most recent photo. I’ve been trying to capture the same thing for a few months and would love some tips!`,
-    time: "09 июня, 2020 | 08:40",
-  },
-];
-
-export const CommentsScreen = () => {
+export const CommentsScreen = ({ route }) => {
+  const { params } = route;
+  const [post, setPost] = useState(null);
+  const { nickname, avatar } = useSelector(user);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
+  // console.log('aervervr',params);
+  // useEffect(() => {
+  //   if (params) {
+  //     setPost(params);
+  //   }
+  // }, []);
 
   useEffect(() => {
     const hideSubscription = Keyboard.addListener("keyboardWillHide", () => {
@@ -69,13 +55,45 @@ export const CommentsScreen = () => {
       hideSubscription.remove();
     };
   }, []);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        // const postRef = doc(db, "posts", params.id);
+        // const postSnapshot = await getDoc(postRef);
+
+        // const comments = postSnapshot.get("comments");
+        // // console.log('comments',comments);
+        // setPost(comments);
+
+        // const q = query(collection(db, "posts"));
+        // const unsubscribe = onSnapshot(q, (snapshot) => {
+        //   snapshot.docChanges().forEach((change) => {
+        //     // setPost()
+        //     if (change.type === "added") {
+        //       console.log("New city: ", change.doc.data());
+        //     }
+        //     if (change.type === "modified") {
+        //       console.log("Modified city: ", change.doc.data());
+        //     }
+        //     if (change.type === "removed") {
+        //       console.log("Removed city: ", change.doc.data());
+        //     }
+        //   });
+        // });
+      } catch (error) {
+        console.error("post", error);
+      }
+    })();
+  }, []);
+
   const {
     control,
     handleSubmit,
     formState: { errors },
   } = useForm({
     defaultValues: {
-      connemt: "",
+      comment: "",
     },
     //    resolver: yupResolver(PostSchema),
   });
@@ -84,10 +102,31 @@ export const CommentsScreen = () => {
     setIsShowKeyboard(false);
   };
 
-  const onSubmit = (data) => {
-    const body = createFormData(avatar, data);
-    console.log(body);
+  const onSubmit = async (data) => {
+    // const body = createFormData(avatar, data);
+    // console.log(data);
+    const currentDate = new Date();
+    const formattedDate = currentDate.toLocaleDateString();
+    const comment = {
+      ...data,
+      author: nickname,
+      date: formattedDate,
+      avatar: avatar,
+      id: Date.now(),
+    };
+    try {
+      const postRef = doc(db, "posts", params.id);
+      const updateData = {
+        comments: [...post, comment],
+      };
+
+      await updateDoc(postRef, updateData);
+       resetField("comment");
+    } catch (error) {
+      console.error("coment", error);
+    }
   };
+
   return (
     <>
       <View
@@ -99,14 +138,25 @@ export const CommentsScreen = () => {
         }}
       >
         {!isShowKeyboard && (
-          <PostImage source={IMAGENAME} style={{ marginVertical: 32 }} />
+          <>
+            {post && (
+              <PostImage
+                source={{ uri: params.image }}
+                style={{ marginVertical: 32 }}
+              />
+            )}
+          </>
         )}
         <TouchableWithoutFeedback onPress={keyboardHide}>
           <>
-            <FlatList
-              data={comments}
-              renderItem={(comment) => <Comment {...comment.item} />}
-            />
+            {post && (
+              <FlatList
+                data={post}
+                renderItem={(post) => (
+                  <Comment {...post.item} nickname={nickname} />
+                )}
+              />
+            )}
             <KeyboardAvoidingView
               behavior={Platform.OS === "ios" ? "padding" : "height"}
             >

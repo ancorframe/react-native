@@ -4,8 +4,6 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  TouchableOpacity,
-  Button,
 } from "react-native";
 import { useForm, Controller } from "react-hook-form";
 import { SubmitButton } from "../commonComponent/SubmitButton/SubmitButton";
@@ -16,8 +14,12 @@ import { createFormData } from "../../helpers/createFormData";
 import { loginSchema } from "../../helpers/validationShemas";
 import { Form, Input, Title, Wrap } from "./LoginForm.styled";
 import { RedirectButton } from "../commonComponent/RedirectButton/RedirectButton";
+import { useDispatch } from "react-redux";
+import { login } from "../../redux/auth/operations";
 
 export default RegistrationForm = ({ navigation }) => {
+   const dispatch = useDispatch();
+
   const [securePswrd, setSecurePswrd] = useState(true);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
 
@@ -48,8 +50,9 @@ export default RegistrationForm = ({ navigation }) => {
   };
 
   const onSubmit = (data) => {
-    const body = createFormData(avatar, data);
-    console.log(body);
+    // const body = createFormData(avatar, data);
+    // console.log(data);
+     dispatch(login(data));
   };
 
   return (

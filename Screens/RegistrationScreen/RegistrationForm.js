@@ -5,23 +5,24 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
+import { useDispatch } from "react-redux";
 import { useForm, Controller } from "react-hook-form";
-import {
-  Form,
-  Input,
-  Title,
-  Wrap,
-} from "./RegistrationForm.styled";
+import { Form, Input, Title, Wrap } from "./RegistrationForm.styled";
 import { SubmitButton } from "../commonComponent/SubmitButton/SubmitButton";
 import { yupResolver } from "@hookform/resolvers/yup";
 import { useEffect, useState } from "react";
 import { ShowButton } from "../commonComponent/ShowButton/ShowButton";
-import { createFormData } from "../../helpers/createFormData";
+// import { createFormData } from "../../helpers/createFormData";
 import { registerSchema } from "../../helpers/validationShemas";
 import { RedirectButton } from "../commonComponent/RedirectButton/RedirectButton";
 import { UserImgChoose } from "../commonComponent/UserImgChoose/UserImgChoose";
+import { register } from "../../redux/auth/operations";
+// import { collection, addDoc } from "firebase/firestore";
+// import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+// import { storage } from "../../firebase/config";
 
 export default RegistrationForm = ({ navigation }) => {
+  const dispatch = useDispatch();
   const [avatar, setAvatar] = useState(null);
   const [securePswrd, setSecurePswrd] = useState(true);
   const [isShowKeyboard, setIsShowKeyboard] = useState(false);
@@ -34,6 +35,23 @@ export default RegistrationForm = ({ navigation }) => {
       hideSubscription.remove();
     };
   }, []);
+
+  // const uploadPhotoToServer = async () => {
+  //   try {
+  //     const response = await fetch(avatar);
+  //     const file = await response.blob();
+  //     const uniqueId = Date.now().toString();
+
+  //     const storageRef = await ref(storage, `authImage/${uniqueId}`);
+  //     await uploadBytes(storageRef, file);
+
+  //     const processedPhoto = await getDownloadURL(storageRef);
+
+  //     return processedPhoto;
+  //   } catch (error) {
+  //     console.error("log", error);
+  //   }
+  // };
 
   const {
     control,
@@ -53,9 +71,12 @@ export default RegistrationForm = ({ navigation }) => {
     setIsShowKeyboard(false);
   };
 
-  const onSubmit = (data) => {
-    const body = createFormData(avatar, data);
-    console.log(body);
+  const onSubmit = async (data) => {
+    try {
+      await dispatch(register({ ...data, avatar }));
+    } catch (error) {
+      console.log("submit register", error);
+    }
   };
 
   return (

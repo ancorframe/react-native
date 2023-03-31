@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { Camera } from "expo-camera";
 import * as Location from "expo-location";
 import * as MediaLibrary from "expo-media-library";
 import * as ImagePicker from "expo-image-picker";
+import { useEffect, useState } from "react";
+import { Camera } from "expo-camera";
 import {
   Dimensions,
   Image,
@@ -16,9 +16,15 @@ import {
 } from "react-native";
 
 //icons
+import { collection, addDoc } from "firebase/firestore";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { storage, db } from "../../firebase/config";
 import { FontAwesome5, EvilIcons, MaterialIcons } from "@expo/vector-icons";
+import { useSelector } from "react-redux";
+import { user } from "../../redux/selectors/authSelector";
 const initialState = { photo: null, location: null, place: "", name: "" };
 const fonts = ["Roboto-Regular"];
+
 export const CreatePost = ({ navigation }) => {
   const [focus, setFocus] = useState(false);
   const [hasPermission, setHasPermission] = useState(null);
@@ -29,30 +35,59 @@ export const CreatePost = ({ navigation }) => {
   const [dimensions, setDimensions] = useState(
     () => Dimensions.get("window").width - 16 * 2
   );
+  const { userId, nickname } = useSelector(user);
+  // console.log(state);
+
+  useEffect(() => {
+    const { photo, name } = state;
+    setIsActiveBtn(photo && name);
+
+    (async () => {
+      try {
+        const { status } = await Camera.requestCameraPermissionsAsync();
+        await MediaLibrary.requestPermissionsAsync();
+        let foreground = await Location.requestForegroundPermissionsAsync({});
+        if (foreground.status !== "granted") {
+          console.log("no access to location");
+        }
+        setHasPermission(status === "granted");
+      } catch (error) {
+        console.log("permitions", error);
+      }
+    })();
+  }, [state]);
 
   const takePhoto = async () => {
-    if (photo) {
-      setState((prev) => ({ ...prev, photo: null }));
-      return;
+    try {
+      if (photo) {
+        setState((prev) => ({ ...prev, photo: null }));
+        return;
+      }
+      const snap = await camera.takePictureAsync();
+      const { coords } = await Location.getCurrentPositionAsync();
+      setState((prev) => ({
+        ...prev,
+        location: { latitude: coords.latitude, longitude: coords.longitude },
+        photo: snap.uri,
+      }));
+    } catch (error) {
+      console.log("takephoto ", error);
     }
-    const snap = await camera.takePictureAsync();
-    const { coords } = await Location.getCurrentPositionAsync();
-    setState((prev) => ({
-      ...prev,
-      location: { latitude: coords.latitude, longitude: coords.longitude },
-      photo: snap.uri,
-    }));
   };
 
   const pickImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-    if (!result.canceled) {
-      setState((prev) => ({ ...prev, photo: result.assets[0].uri }));
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 1,
+      });
+      if (!result.canceled) {
+        setState((prev) => ({ ...prev, photo: result.assets[0].uri }));
+      }
+    } catch (error) {
+      console.log("pick image", error);
     }
   };
 
@@ -63,37 +98,63 @@ export const CreatePost = ({ navigation }) => {
         : Camera.Constants.Type.back
     );
   };
-  const onPublicPost = () => {
-    navigation.navigate("MainPost", state);
-    setState(initialState);
+  const uploadPhotoToServer = async () => {
+    try {
+      const uniqueId = Date.now().toString();
+      const storageRef = ref(storage, `postImage/${uniqueId}`);
+      const response = await fetch(state.photo);
+      const file = await response.blob();
+      await uploadBytes(storageRef, file);
+
+      const processedPhoto = await getDownloadURL(storageRef);
+
+      return processedPhoto;
+    } catch (error) {
+      console.error("log", error);
+    }
   };
+  const onPublicPost = async () => {
+    try {
+      setIsActiveBtn(false);
+      // console.log(state);
+      const photo = await uploadPhotoToServer();
+      // console.log("photo", photo);
+      await addDoc(collection(db, "posts"), {
+        image: photo,
+        name: state.name,
+        location: {
+          locationName: state.place,
+          latitude: !state.location ? null : state.location.latitude,
+          longitude: !state.location ? null : state.location.longitude,
+        },
+        userId,
+        nickname,
+        likes: 0,
+        comments: [],
+        createdAt: Date.now(),
+      });
 
-  useEffect(() => {
-    const { photo, name } = state;
-    setIsActiveBtn(photo && name);
-    (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      await MediaLibrary.requestPermissionsAsync();
-      let foreground = await Location.requestForegroundPermissionsAsync({});
-      if (foreground.status !== "granted") {
-        console.log("no access to location");
-      }
-      setHasPermission(status === "granted");
-    })();
-  }, [state]);
-
+      setState(initialState);
+      navigation.navigate("Posts");
+    } catch (error) {
+      console.log("create post ", error);
+    } finally {
+      setIsActiveBtn(true);
+    }
+  };
+  // console.log(state.photo);
 
   const onTouchOutOfInput = () => {
     Keyboard.dismiss();
     setFocus(false);
   };
 
-  if (hasPermission === null) {
-    return <View />;
-  }
-  if (hasPermission === false) {
-    return <Text>No access to camera</Text>;
-  }
+  // if (hasPermission === null) {
+  //   return <View />;
+  // }
+  // if (hasPermission === false) {
+  //   return <Text>No access to camera</Text>;
+  // }
   const { photo, name, place } = state;
   return (
     <TouchableWithoutFeedback onPress={onTouchOutOfInput}>
@@ -135,7 +196,7 @@ export const CreatePost = ({ navigation }) => {
             placeholder="Название..."
             style={{ ...styles.input, fontFamily: fonts[0] }}
             onFocus={() => setFocus(true)}
-            onChangeText={(name) => setState(prev => ({...prev, name}))}
+            onChangeText={(name) => setState((prev) => ({ ...prev, name }))}
             value={name}
           />
         </View>
@@ -150,7 +211,7 @@ export const CreatePost = ({ navigation }) => {
             placeholder="Местность..."
             style={{ ...styles.input, fontFamily: fonts[0] }}
             onFocus={() => setFocus(true)}
-            onChangeText={(place) => setState(prev => ({...prev, place}))}
+            onChangeText={(place) => setState((prev) => ({ ...prev, place }))}
             value={place}
           />
         </View>
@@ -193,14 +254,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#F6F6F6",
     borderWidth: 1,
     borderColor: "#E8E8E8",
-    borderRadius: 8,
+    // borderRadius: 8,
   },
   loadImgText: {
     paddingTop: 8,
     color: "#BDBDBD",
     fontSize: 16,
-    lineHeight: 19,
-    fontWeight: 400,
+    // lineHeight: 19,
+    // fontWeight: 400,
   },
   loadImgButton: {
     position: "absolute",
@@ -212,7 +273,7 @@ const styles = StyleSheet.create({
     height: 60,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: "50%",
+    // borderRadius: "50%",
     zIndex: 100,
   },
   changeCameraButton: {
@@ -224,7 +285,7 @@ const styles = StyleSheet.create({
     height: 40,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: "50%",
+    // borderRadius: "50%",
     zIndex: 100,
   },
   input: {
@@ -247,7 +308,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
     marginTop: 32,
     paddingVertical: 16,
-    borderRadius: 100,
+    // borderRadius: 100,
   },
   btnText: {
     fontSize: 16,

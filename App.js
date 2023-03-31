@@ -7,6 +7,10 @@ import { createStackNavigator } from "@react-navigation/stack";
 import * as SplashScreen from "expo-splash-screen";
 import LoginScreen from "./Screens/LoginScreen/LoginScreen";
 import { Home } from "./Screens/Home/Home";
+import { Main } from "./components/Main";
+import { Provider } from "react-redux";
+import {store}from './redux/store'
+import { PostsScreen } from "./Screens/PostsScreen/PostsScreen";
 
 const loadFonts = async () => {
   await Font.loadAsync({
@@ -46,38 +50,17 @@ export default function App() {
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: "#fff",
-      }}
-      onLayout={onLayoutRootView}
-    >
-      <NavigationContainer>
-        <AuthStack.Navigator initialRouteName="Home">
-          <AuthStack.Screen
-            name="Registration"
-            component={RegistrationScreen}
-            options={{
-              headerShown: false,
-            }}
-          />
-          <AuthStack.Screen
-            name="Login"
-            component={LoginScreen}
-            options={{
-              headerShown: false,
-            }}
-          />
-          <AuthStack.Screen
-            name="Home"
-            component={Home}
-            options={{
-              headerShown: false,
-            }}
-          />
-        </AuthStack.Navigator>
-      </NavigationContainer>
-    </View>
+    <Provider store={store}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#fff",
+        }}
+        onLayout={onLayoutRootView}
+      >
+        <Main />
+        {/* <PostsScreen/> */}
+      </View>
+    </Provider>
   );
 }

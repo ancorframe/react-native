@@ -1,34 +1,36 @@
 import { View } from "react-native";
 import { CommentText, CommentTime, CommentWrap, UserImg } from "./CommentsScreen.styled";
 
-export const Comment = ({ type, avatar, comment, time }) => {
+export const Comment = ({ ...props }) => {
+  // console.log('props',props);
+  const { author, nickname, comment, date, avatar } = props;
   return (
     <>
-      {type === "answer" && (
+      {author === nickname && (
         <View
           style={{
             flexDirection: "row-reverse",
             marginBottom: 24,
           }}
         >
-          <UserImg source={avatar} reverse />
+          <UserImg source={{ uri: avatar }} reverse />
           <CommentWrap reverse>
             <CommentText reverse>{comment}</CommentText>
-            <CommentTime reverse>{time}</CommentTime>
+            <CommentTime reverse>{date}</CommentTime>
           </CommentWrap>
         </View>
       )}
-      {type === "comment" && (
+      {author !== nickname && (
         <View
           style={{
             flexDirection: "row",
             marginBottom: 24,
           }}
         >
-          <UserImg source={avatar} />
+          <UserImg source={{ uri: avatar }} />
           <CommentWrap>
             <CommentText>{comment}</CommentText>
-            <CommentTime>{time}</CommentTime>
+            <CommentTime>{date}</CommentTime>
           </CommentWrap>
         </View>
       )}
